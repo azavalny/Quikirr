@@ -138,6 +138,35 @@ def dec_label(y: int) -> str:
     return f"Dec-{str(y)[-2:]}"
 
 
+_QUARTER_MONTH_ABBR = {3: "Mar", 6: "Jun", 9: "Sep", 12: "Dec"}
+
+
+def quarter_label(year: int, month: int) -> str:
+    return f"{_QUARTER_MONTH_ABBR[month]}-{str(year)[-2:]}"
+
+
+def quarter_end_column_index(header_row: int, ws) -> dict[tuple[int, int], int]:
+    """Map (year, quarter_end_month) -> 1-based column index."""
+    _, _, first_dc = find_table_bounds(ws)
+    by_quarter: dict[tuple[int, int], list[tuple[int, date]]] = {}
+    for c in range(first_dc, ws.max_column + 1):
+        d = _parse_header_date(ws.cell(header_row, c).value)
+        if d is None:
+            continue
+        qm = ((d.month - 1) // 3 + 1) * 3
+        key = (d.year, qm)
+        by_quarter.setdefault(key, []).append((c, d))
+    chosen: dict[tuple[int, int], int] = {}
+    for key, lst in by_quarter.items():
+        _, qm = key
+        exact = [t for t in lst if t[1].month == qm]
+        if exact:
+            chosen[key] = max(exact, key=lambda t: t[1])[0]
+        else:
+            chosen[key] = max(lst, key=lambda t: t[1])[0]
+    return chosen
+
+
 @dataclass
 class SourceContext:
     """Everything a tab needs to build its sheet."""
@@ -149,6 +178,8 @@ class SourceContext:
     data_start_row: int
     data_end_row: int
     snaps: dict[int, list[float]] = field(default_factory=dict)
+    quarter_keys: list[tuple[int, int]] = field(default_factory=list)
+    quarter_col_letters: dict[tuple[int, int], str] = field(default_factory=dict)
 
     @classmethod
     def from_worksheet(cls, ws) -> SourceContext:
@@ -159,6 +190,9 @@ class SourceContext:
         y2c = year_end_column_index(header_row, ws)
         year_col_ltrs = {y: get_column_letter(c) for y, c in y2c.items()}
         data_start, data_end = find_data_bounds(ws, header_row, cust_col)
+        q2c = quarter_end_column_index(header_row, ws)
+        q_keys = sorted(q2c.keys())
+        q_col_ltrs = {k: get_column_letter(c) for k, c in q2c.items()}
         return cls(
             ws_in=ws,
             header_row=header_row,
@@ -168,4 +202,6 @@ class SourceContext:
             data_start_row=data_start,
             data_end_row=data_end,
             snaps=snaps,
+            quarter_keys=q_keys,
+            quarter_col_letters=q_col_ltrs,
         )
