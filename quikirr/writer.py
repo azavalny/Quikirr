@@ -15,6 +15,7 @@ from .styles import (
     FONT_BOLD,
     FONT_ITALIC,
     FONT_WHITE_BOLD,
+    INT_FMT,
     PCT_FMT,
     PCT_PARENS_NEG_FMT,
     THIN,
@@ -102,11 +103,6 @@ def write_summary_sheet(
             if val == "HATCH":
                 cell.value = None
                 cell.fill = FILL_HATCH
-            elif val == "DASH":
-                cell.value = "–"
-                cell.alignment = Alignment(horizontal="right")
-                if is_italic_label:
-                    cell.font = FONT_ITALIC
             elif val is None:
                 cell.value = None
             elif spec.get("pct_or_dash") and isinstance(val, (int, float)):
@@ -133,7 +129,7 @@ def write_summary_sheet(
                 if spec.get("churn_count"):
                     cell.number_format = CHURN_COUNT_FMT
                 else:
-                    cell.number_format = "#,##0"
+                    cell.number_format = INT_FMT
                 if is_italic_label:
                     cell.font = FONT_ITALIC
             else:

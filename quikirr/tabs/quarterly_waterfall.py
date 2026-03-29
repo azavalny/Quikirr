@@ -33,7 +33,7 @@ def build_quarterly_formula_values(
     def new_row() -> dict[str, Any]:
         return {k: None for k in col_keys}
 
-    D = "DASH"
+    D = "HATCH"
     cur = 3
 
     # ---- Quarterly Waterfall ----
@@ -108,7 +108,7 @@ def build_quarterly_formula_values(
             r[col_keys[i]] = D
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,"",({oc}{R_EOP}/{oc}{R_BOP})^4-1)'
+            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,0,({oc}{R_EOP}/{oc}{R_BOP})^4-1)'
     rows.append({"label": "% Growth QoQ Annualized", "cells": r, "italic": True, "pct": True})
 
     cur += 1
@@ -118,7 +118,7 @@ def build_quarterly_formula_values(
             r[col_keys[i]] = D
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,"",{oc}{R_EOP}/{oc}{R_BOP}-1)'
+            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,0,{oc}{R_EOP}/{oc}{R_BOP}-1)'
     rows.append({"label": "% Growth QoQ", "cells": r, "italic": True, "pct": True})
 
     cur += 1
@@ -129,7 +129,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             oc4 = _oc(i - 4)
-            r[col_keys[i]] = f'=IF({oc4}{R_EOP}=0,"",{oc}{R_EOP}/{oc4}{R_EOP}-1)'
+            r[col_keys[i]] = f'=IF({oc4}{R_EOP}=0,0,{oc}{R_EOP}/{oc4}{R_EOP}-1)'
     rows.append({"label": "% Growth YoY", "cells": r, "italic": True, "pct": True})
 
     cur += 1
@@ -172,7 +172,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'(({oc}{R_BOP}+{oc}{R_DS}+{oc}{R_CH})/{oc}{R_BOP})^4)'
             )
     rows.append({"label": "Gross Retention (QoQ Annualized)", "cells": r, "beige": True, "pct": True})
@@ -185,7 +185,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'(({oc}{R_BOP}+{oc}{R_CH})/{oc}{R_BOP})^4)'
             )
     rows.append({"label": "Loss-Only Retention (QoQ Annualized)", "cells": r, "beige": True, "pct": True})
@@ -198,7 +198,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'(({oc}{R_BOP}+{oc}{R_UP}+{oc}{R_DS}+{oc}{R_CH})/{oc}{R_BOP})^4)'
             )
     rows.append({"label": "Net Retention (QoQ Annualized)", "cells": r, "beige": True, "pct": True})
@@ -215,7 +215,7 @@ def build_quarterly_formula_values(
             lc, rc = _oc(i - 3), _oc(i)
             bop = f"{lc}{R_BOP}"
             r[col_keys[i]] = (
-                f'=IF({bop}=0,"",'
+                f'=IF({bop}=0,0,'
                 f"({bop}+SUM({lc}{R_DS}:{rc}{R_DS})"
                 f"+SUM({lc}{R_CH}:{rc}{R_CH}))/{bop})"
             )
@@ -230,7 +230,7 @@ def build_quarterly_formula_values(
             lc, rc = _oc(i - 3), _oc(i)
             bop = f"{lc}{R_BOP}"
             r[col_keys[i]] = (
-                f'=IF({bop}=0,"",'
+                f'=IF({bop}=0,0,'
                 f"({bop}+SUM({lc}{R_CH}:{rc}{R_CH}))/{bop})"
             )
     rows.append({"label": "Loss-Only Retention (LTM)", "cells": r, "beige": True, "pct": True})
@@ -244,7 +244,7 @@ def build_quarterly_formula_values(
             lc, rc = _oc(i - 3), _oc(i)
             bop = f"{lc}{R_BOP}"
             r[col_keys[i]] = (
-                f'=IF({bop}=0,"",'
+                f'=IF({bop}=0,0,'
                 f"({bop}+SUM({lc}{R_UP}:{rc}{R_UP})"
                 f"+SUM({lc}{R_DS}:{rc}{R_DS})"
                 f"+SUM({lc}{R_CH}:{rc}{R_CH}))/{bop})"
@@ -310,7 +310,7 @@ def build_quarterly_formula_values(
             r[col_keys[i]] = D
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_BOPC}=0,"–",{oc}{R_EOPC}/{oc}{R_BOPC}-1)'
+            r[col_keys[i]] = f'=IF({oc}{R_BOPC}=0,0,{oc}{R_EOPC}/{oc}{R_BOPC}-1)'
     rows.append({"label": "Logo % Growth", "cells": r, "italic": True, "pct_or_dash": True, "pct": True})
 
     cur += 1
@@ -321,7 +321,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             oc4 = _oc(i - 4)
-            r[col_keys[i]] = f'=IF({oc4}{R_EOPC}=0,"–",{oc}{R_EOPC}/{oc4}{R_EOPC}-1)'
+            r[col_keys[i]] = f'=IF({oc4}{R_EOPC}=0,0,{oc}{R_EOPC}/{oc4}{R_EOPC}-1)'
     rows.append({"label": "Logo % Growth (YoY)", "cells": r, "italic": True, "pct_or_dash": True, "pct": True})
 
     # ---- Logo retention ----
@@ -334,7 +334,7 @@ def build_quarterly_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOPC}=0,"",'
+                f'=IF({oc}{R_BOPC}=0,0,'
                 f'(({oc}{R_BOPC}-{oc}{R_CHC})/{oc}{R_BOPC})^4)'
             )
     rows.append({"label": "Gross Logo Retention (QoQ Annualized)", "cells": r, "beige": True, "pct": True})
@@ -348,7 +348,7 @@ def build_quarterly_formula_values(
             lc, rc = _oc(i - 3), _oc(i)
             bop = f"{lc}{R_BOPC}"
             r[col_keys[i]] = (
-                f'=IF({bop}=0,"",'
+                f'=IF({bop}=0,0,'
                 f"({bop}-SUM({lc}{R_CHC}:{rc}{R_CHC}))/{bop})"
             )
     rows.append({"label": "Gross Logo Retention (YoY)", "cells": r, "beige": True, "pct": True})
@@ -362,7 +362,7 @@ def build_quarterly_formula_values(
             r[col_keys[i]] = D
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_EOPC}=0,"",{oc}{R_EOP}/{oc}{R_EOPC})'
+            r[col_keys[i]] = f'=IF({oc}{R_EOPC}=0,0,{oc}{R_EOP}/{oc}{R_EOPC})'
     rows.append({"label": "Avg. Logo Size ($ Actuals)", "cells": r, "currency": True})
 
     cur += 1
@@ -373,7 +373,7 @@ def build_quarterly_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGL}=0,{poc}{R_AVGL}=""),"",'
+                f'=IF({poc}{R_AVGL}=0,0,'
                 f'{oc}{R_AVGL}/{poc}{R_AVGL}-1)'
             )
     rows.append({"label": "Avg Logo Size QoQ Growth", "cells": r, "italic": True, "pct": True, "pct_parens_neg": True})
@@ -396,7 +396,7 @@ def build_quarterly_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGNL}=0,{poc}{R_AVGNL}=""),"",'
+                f'=IF({poc}{R_AVGNL}=0,0,'
                 f'{oc}{R_AVGNL}/{poc}{R_AVGNL}-1)'
             )
     rows.append({"label": "Avg New Logo Size QoQ Growth", "cells": r, "italic": True, "pct": True, "pct_parens_neg": True})
@@ -419,7 +419,7 @@ def build_quarterly_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGCL}=0,{poc}{R_AVGCL}=""),"",'
+                f'=IF({poc}{R_AVGCL}=0,0,'
                 f'{oc}{R_AVGCL}/{poc}{R_AVGCL}-1)'
             )
     rows.append({"label": "Avg Churned Logo Size QoQ Growth", "cells": r, "italic": True, "pct": True, "pct_parens_neg": True})

@@ -11,9 +11,10 @@ GREY_HATCH_BG = "F2F2F2"
 THIN = Side(style="thin", color="000000")
 
 ACCOUNTING_FMT = '_("$"* #,##0_);_("$"* (#,##0);_("$"* "-"??_);_(@_)'
-PCT_FMT = "0%"
-PCT_PARENS_NEG_FMT = "0%;(0%)"
-CHURN_COUNT_FMT = "(#,##0)"
+PCT_FMT = '0%_);(0%);" - "'
+PCT_PARENS_NEG_FMT = '0%_);(0%);" - "'
+CHURN_COUNT_FMT = '(#,##0);(#,##0);" - "'
+INT_FMT = '_(* #,##0_);_(* (#,##0);_(* " - "?_);_(@_)'
 
 FILL_BLUE = PatternFill(fill_type="solid", fgColor=BLUE)
 FILL_BEIGE = PatternFill(fill_type="solid", fgColor=BEIGE)

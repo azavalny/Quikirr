@@ -103,7 +103,7 @@ def build_formula_values(
             r[col_keys[i]] = "HATCH"
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,"",{oc}{R_EOP}/{oc}{R_BOP}-1)'
+            r[col_keys[i]] = f'=IF({oc}{R_BOP}=0,0,{oc}{R_EOP}/{oc}{R_BOP}-1)'
     rows.append({"label": "% Growth", "cells": r, "italic": True, "pct": True})
 
     cur += 1
@@ -144,7 +144,7 @@ def build_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'({oc}{R_BOP}+{oc}{R_DS}+{oc}{R_CH})/{oc}{R_BOP})'
             )
     rows.append({"label": "Gross Retention %", "cells": r, "beige": True, "pct": True})
@@ -157,7 +157,7 @@ def build_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'({oc}{R_BOP}+{oc}{R_CH})/{oc}{R_BOP})'
             )
     rows.append({"label": "Loss-Only Retention %", "cells": r, "beige": True, "pct": True})
@@ -170,7 +170,7 @@ def build_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOP}=0,"",'
+                f'=IF({oc}{R_BOP}=0,0,'
                 f'({oc}{R_BOP}+{oc}{R_UP}+{oc}{R_DS}+{oc}{R_CH})/{oc}{R_BOP})'
             )
     rows.append({"label": "Net Retention %", "cells": r, "beige": True, "pct": True})
@@ -227,10 +227,10 @@ def build_formula_values(
     r = new_row()
     for i in range(len(years)):
         if i == 0:
-            r[col_keys[i]] = "DASH"
+            r[col_keys[i]] = "HATCH"
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_BOPC}=0,"–",{oc}{R_EOPC}/{oc}{R_BOPC}-1)'
+            r[col_keys[i]] = f'=IF({oc}{R_BOPC}=0,0,{oc}{R_EOPC}/{oc}{R_BOPC}-1)'
     rows.append({"label": "Logo % Growth", "cells": r, "italic": True, "pct_or_dash": True, "pct": True})
 
     cur += 1
@@ -241,7 +241,7 @@ def build_formula_values(
         else:
             oc = _oc(i)
             r[col_keys[i]] = (
-                f'=IF({oc}{R_BOPC}=0,"",'
+                f'=IF({oc}{R_BOPC}=0,0,'
                 f'({oc}{R_BOPC}-{oc}{R_CHC})/{oc}{R_BOPC})'
             )
     rows.append({"label": "Gross Logo Retention %", "cells": r, "beige": True, "pct": True})
@@ -253,7 +253,7 @@ def build_formula_values(
             r[col_keys[i]] = "HATCH"
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_EOPC}=0,"",{oc}{R_EOP}/{oc}{R_EOPC})'
+            r[col_keys[i]] = f'=IF({oc}{R_EOPC}=0,0,{oc}{R_EOP}/{oc}{R_EOPC})'
     rows.append({"label": "Avg. Logo Size ($ Actuals)", "cells": r, "currency": True})
 
     cur += 1
@@ -264,7 +264,7 @@ def build_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGL}=0,{poc}{R_AVGL}=""),"",'
+                f'=IF({poc}{R_AVGL}=0,0,'
                 f'{oc}{R_AVGL}/{poc}{R_AVGL}-1)'
             )
     rows.append({"label": "Avg Logo Size YoY Growth", "cells": r, "italic": True, "pct": True})
@@ -276,7 +276,7 @@ def build_formula_values(
             r[col_keys[i]] = "HATCH"
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_NEWC}=0,"",{oc}{R_NEW}/{oc}{R_NEWC})'
+            r[col_keys[i]] = f'=IF({oc}{R_NEWC}=0,0,{oc}{R_NEW}/{oc}{R_NEWC})'
     rows.append({"label": "Avg. New Logo Size ($ Actuals)", "cells": r, "currency": True})
 
     cur += 1
@@ -287,7 +287,7 @@ def build_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGNL}=0,{poc}{R_AVGNL}=""),"",'
+                f'=IF({poc}{R_AVGNL}=0,0,'
                 f'{oc}{R_AVGNL}/{poc}{R_AVGNL}-1)'
             )
     rows.append(
@@ -307,7 +307,7 @@ def build_formula_values(
             r[col_keys[i]] = "HATCH"
         else:
             oc = _oc(i)
-            r[col_keys[i]] = f'=IF({oc}{R_CHC}=0,"",-{oc}{R_CH}/{oc}{R_CHC})'
+            r[col_keys[i]] = f'=IF({oc}{R_CHC}=0,0,-{oc}{R_CH}/{oc}{R_CHC})'
     rows.append({"label": "Avg. Churned Logo Size ($ Actuals)", "cells": r, "currency": True})
 
     cur += 1
@@ -318,7 +318,7 @@ def build_formula_values(
         else:
             oc, poc = _oc(i), _oc(i - 1)
             r[col_keys[i]] = (
-                f'=IF(OR({poc}{R_AVGCL}=0,{poc}{R_AVGCL}=""),"",'
+                f'=IF({poc}{R_AVGCL}=0,0,'
                 f'{oc}{R_AVGCL}/{poc}{R_AVGCL}-1)'
             )
     rows.append(
