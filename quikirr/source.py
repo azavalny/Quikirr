@@ -138,6 +138,26 @@ def dec_label(y: int) -> str:
     return f"Dec-{str(y)[-2:]}"
 
 
+_Q_MONTHS = {3: "Q1", 6: "Q2", 9: "Q3", 12: "Q4"}
+
+
+def quarter_label(y: int, m: int) -> str:
+    return f"{_Q_MONTHS.get(m, f'M{m}')}-{str(y)[-2:]}"
+
+
+def quarter_end_column_index(header_row: int, ws) -> dict[tuple[int, int], int]:
+    """Map (year, quarter-end-month) -> 1-based column index."""
+    _, _, first_dc = find_table_bounds(ws)
+    result: dict[tuple[int, int], int] = {}
+    for c in range(first_dc, ws.max_column + 1):
+        d = _parse_header_date(ws.cell(header_row, c).value)
+        if d is None:
+            continue
+        if d.month in _Q_MONTHS:
+            result[(d.year, d.month)] = c
+    return result
+
+
 @dataclass
 class SourceContext:
     """Everything a tab needs to build its sheet."""
@@ -149,6 +169,8 @@ class SourceContext:
     data_start_row: int
     data_end_row: int
     snaps: dict[int, list[float]] = field(default_factory=dict)
+    quarter_keys: list[tuple[int, int]] = field(default_factory=list)
+    quarter_col_letters: dict[tuple[int, int], str] = field(default_factory=dict)
 
     @classmethod
     def from_worksheet(cls, ws) -> SourceContext:
@@ -159,6 +181,9 @@ class SourceContext:
         y2c = year_end_column_index(header_row, ws)
         year_col_ltrs = {y: get_column_letter(c) for y, c in y2c.items()}
         data_start, data_end = find_data_bounds(ws, header_row, cust_col)
+        q2c = quarter_end_column_index(header_row, ws)
+        q_keys = sorted(q2c.keys())
+        q_col_ltrs = {k: get_column_letter(c) for k, c in q2c.items()}
         return cls(
             ws_in=ws,
             header_row=header_row,
@@ -168,4 +193,6 @@ class SourceContext:
             data_start_row=data_start,
             data_end_row=data_end,
             snaps=snaps,
+            quarter_keys=q_keys,
+            quarter_col_letters=q_col_ltrs,
         )
