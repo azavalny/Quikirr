@@ -16,6 +16,7 @@ def build_quarterly_formula_values(
     data_start_row: int,
     data_end_row: int,
     src_sheet: str = ORIGINAL_SHEET,
+    intermediate=None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
     col_keys = [quarter_label(y, m) for y, m in quarter_keys]
     n = len(quarter_keys)
@@ -24,6 +25,14 @@ def build_quarterly_formula_values(
     def _rng(key: tuple[int, int]) -> str:
         cl = quarter_col_letters[key]
         return f"{sn}!${cl}${data_start_row}:${cl}${data_end_row}"
+
+    if intermediate:
+        ic_sn = f"'{intermediate.sheet_name}'"
+
+        def _ic_ref(metric_key: str, qk: tuple[int, int]) -> str:
+            cl = get_column_letter(intermediate.quarter_cols[qk])
+            row = intermediate.quarterly_rows[metric_key]
+            return f"={ic_sn}!${cl}${row}"
 
     def _oc(i: int) -> str:
         return get_column_letter(i + 2)
@@ -43,6 +52,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("bop", quarter_keys[i])
         else:
             r[col_keys[i]] = f"=SUM({_rng(quarter_keys[i-1])})*{MRR_TO_ARR}"
     rows.append({"label": "BoP ARR", "cells": r})
@@ -52,6 +63,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("new", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}<=0)*({cr}>0)*{cr})*{MRR_TO_ARR}"
@@ -62,6 +75,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("up", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = (
@@ -75,6 +90,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("ds", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = (
@@ -88,6 +105,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("ch", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = f"=-SUMPRODUCT(({pr}>0)*({cr}<=0)*{pr})*{MRR_TO_ARR}"
@@ -96,7 +115,10 @@ def build_quarterly_formula_values(
     R_EOP = cur; cur += 1
     r = new_row()
     for i in range(n):
-        r[col_keys[i]] = f"=SUM({_rng(quarter_keys[i])})*{MRR_TO_ARR}"
+        if intermediate:
+            r[col_keys[i]] = _ic_ref("eop", quarter_keys[i])
+        else:
+            r[col_keys[i]] = f"=SUM({_rng(quarter_keys[i])})*{MRR_TO_ARR}"
     rows.append({"label": "EoP ARR", "cells": r, "eop": True})
 
     # ---- Growth metrics ----
@@ -261,6 +283,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("bopc", quarter_keys[i])
         else:
             r[col_keys[i]] = f'=COUNTIF({_rng(quarter_keys[i-1])},">0")'
     rows.append({"label": "BoP Customers", "cells": r, "int": True})
@@ -270,6 +294,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("newc", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}<=0)*({cr}>0)*1)"
@@ -280,6 +306,8 @@ def build_quarterly_formula_values(
     for i in range(n):
         if i == 0:
             r[col_keys[i]] = D
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("chc", quarter_keys[i])
         else:
             pr, cr = _rng(quarter_keys[i - 1]), _rng(quarter_keys[i])
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}>0)*({cr}<=0)*1)"
@@ -288,7 +316,10 @@ def build_quarterly_formula_values(
     R_EOPC = cur; cur += 1
     r = new_row()
     for i in range(n):
-        r[col_keys[i]] = f'=COUNTIF({_rng(quarter_keys[i])},">0")'
+        if intermediate:
+            r[col_keys[i]] = _ic_ref("eopc", quarter_keys[i])
+        else:
+            r[col_keys[i]] = f'=COUNTIF({_rng(quarter_keys[i])},">0")'
     rows.append({"label": "EoP Customers", "cells": r, "eop": True, "int": True})
 
     # ---- Customer derived metrics ----
@@ -436,6 +467,7 @@ class QuarterlyWaterfallTab:
             ctx.quarter_col_letters,
             ctx.data_start_row,
             ctx.data_end_row,
+            intermediate=ctx.intermediate,
         )
         ws = wb.create_sheet()
         ws.title = self.title[:31]

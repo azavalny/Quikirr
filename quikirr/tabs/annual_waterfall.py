@@ -16,6 +16,7 @@ def build_formula_values(
     data_start_row: int,
     data_end_row: int,
     src_sheet: str = ORIGINAL_SHEET,
+    intermediate=None,
 ) -> tuple[list[str], list[dict[str, Any]]]:
     """Build row specs with Excel formula strings instead of hard-coded values."""
     col_keys = [dec_label(y) for y in years]
@@ -24,6 +25,14 @@ def build_formula_values(
     def _rng(year: int) -> str:
         cl = year_col_letters[year]
         return f"{sn}!${cl}${data_start_row}:${cl}${data_end_row}"
+
+    if intermediate:
+        ic_sn = f"'{intermediate.sheet_name}'"
+
+        def _ic_ref(metric_key: str, year: int) -> str:
+            cl = get_column_letter(intermediate.year_cols[year])
+            row = intermediate.annual_rows[metric_key]
+            return f"={ic_sn}!${cl}${row}"
 
     def _oc(i: int) -> str:
         return get_column_letter(i + 2)
@@ -40,6 +49,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("bop", y)
         else:
             r[col_keys[i]] = f"=SUM({_rng(years[i-1])})*{MRR_TO_ARR}"
     rows.append({"label": "BoP ARR", "cells": r})
@@ -49,6 +60,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("new", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}<=0)*({cr}>0)*{cr})*{MRR_TO_ARR}"
@@ -59,6 +72,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("up", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = (
@@ -72,6 +87,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("ds", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = (
@@ -85,6 +102,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("ch", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = f"=-SUMPRODUCT(({pr}>0)*({cr}<=0)*{pr})*{MRR_TO_ARR}"
@@ -93,7 +112,10 @@ def build_formula_values(
     R_EOP = cur; cur += 1
     r = new_row()
     for i, y in enumerate(years):
-        r[col_keys[i]] = f"=SUM({_rng(y)})*{MRR_TO_ARR}"
+        if intermediate:
+            r[col_keys[i]] = _ic_ref("eop", y)
+        else:
+            r[col_keys[i]] = f"=SUM({_rng(y)})*{MRR_TO_ARR}"
     rows.append({"label": "EoP ARR", "cells": r, "eop": True})
 
     cur += 1
@@ -183,6 +205,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("bopc", y)
         else:
             r[col_keys[i]] = f'=COUNTIF({_rng(years[i-1])},">0")'
     rows.append({"label": "BoP Customers", "cells": r, "int": True})
@@ -192,6 +216,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("newc", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}<=0)*({cr}>0)*1)"
@@ -202,6 +228,8 @@ def build_formula_values(
     for i, y in enumerate(years):
         if i == 0:
             r[col_keys[i]] = "HATCH"
+        elif intermediate:
+            r[col_keys[i]] = _ic_ref("chc", y)
         else:
             pr, cr = _rng(years[i - 1]), _rng(y)
             r[col_keys[i]] = f"=SUMPRODUCT(({pr}>0)*({cr}<=0)*1)"
@@ -210,7 +238,10 @@ def build_formula_values(
     R_EOPC = cur; cur += 1
     r = new_row()
     for i, y in enumerate(years):
-        r[col_keys[i]] = f'=COUNTIF({_rng(y)},">0")'
+        if intermediate:
+            r[col_keys[i]] = _ic_ref("eopc", y)
+        else:
+            r[col_keys[i]] = f'=COUNTIF({_rng(y)},">0")'
     rows.append({"label": "EoP Customers", "cells": r, "eop": True, "int": True})
 
     cur += 1
@@ -343,6 +374,7 @@ class AnnualWaterfallTab:
             ctx.year_col_letters,
             ctx.data_start_row,
             ctx.data_end_row,
+            intermediate=ctx.intermediate,
         )
         ws = wb.active if wb.active.title == "Sheet" else wb.create_sheet()
         ws.title = self.title[:31]

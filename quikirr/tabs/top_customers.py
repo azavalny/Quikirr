@@ -9,7 +9,7 @@ from openpyxl.formatting.rule import CellIsRule
 from openpyxl.styles import Alignment, Border
 from openpyxl.utils import get_column_letter
 
-from ..config import MRR_TO_ARR, ORIGINAL_SHEET, TOP_CUSTOMERS_SHEET
+from ..config import INTERMEDIATE_SHEET, MRR_TO_ARR, TOP_CUSTOMERS_SHEET
 from ..source import (
     SourceContext,
     _is_customer_label_row,
@@ -34,7 +34,7 @@ from ..styles import (
 
 TOP_N = 10
 DATA_START = 4
-SN = f"'{ORIGINAL_SHEET}'"
+SN = f"'{INTERMEDIATE_SHEET}'"
 
 
 @dataclass
@@ -224,7 +224,7 @@ def _write_customer_formulas(
         acl.append(cl)
         ws.cell(row, col).value = (
             f'=IFERROR(INDEX({SN}!${src_cols[y]}${ds}:${src_cols[y]}${de},'
-            f'MATCH($A{row},{SN}!${rank_cl}${ds}:${rank_cl}${de},0),1)*{MRR_TO_ARR},0)'
+            f'MATCH($A{row},{SN}!${rank_cl}${ds}:${rank_cl}${de},0),1),0)'
         )
 
     first, last = acl[0], acl[-1]
@@ -328,7 +328,7 @@ def _write_total_customers_row(
         cl = get_column_letter(col)
         acl.append(cl)
         rng = f"{SN}!${src_cols[y]}${data_start_row}:${src_cols[y]}${data_end_row}"
-        ws.cell(row, col).value = f"=SUM({rng})*{MRR_TO_ARR}"
+        ws.cell(row, col).value = f"=SUM({rng})"
 
     first, last = acl[0], acl[-1]
     ws.cell(row, layout["cagr"]).value = (
@@ -430,8 +430,12 @@ class TopCustomersTab:
         layout = _col_layout(n)
         total_cols = layout["since"]
 
-        y2c = year_end_column_index(ctx.header_row, ctx.ws_in)
-        src_cols = {y: get_column_letter(c) for y, c in y2c.items()}
+        ic = ctx.intermediate
+        src_cols = {y: get_column_letter(c) for y, c in ic.year_cols.items()}
+        cust_cl = "A"
+        rank_cl = get_column_letter(ic.rank_col)
+        ds = ic.cust_start_row
+        de = ic.cust_end_row
 
         customers = _read_customers(ctx)
         ranked = sorted(customers, key=lambda c: c.last_arr, reverse=True)
@@ -440,24 +444,10 @@ class TopCustomersTab:
         num_top = len(top10)
         last_src_col = src_cols[max(years)]
         other_label = (
-            f'="Other ("&COUNTIFS({SN}!${last_src_col}${ctx.data_start_row}:'
-            f'${last_src_col}${ctx.data_end_row},">"&10/{MRR_TO_ARR})'
+            f'="Other ("&COUNTIFS({SN}!${last_src_col}${ds}:'
+            f'${last_src_col}${de},">"&10)'
             f'-{num_top}&" Customers)"'
         )
-
-        ws_orig = wb[ORIGINAL_SHEET]
-        rank_col_idx = ctx.ws_in.max_column + 1
-        rank_cl = get_column_letter(rank_col_idx)
-        cust_cl = get_column_letter(ctx.cust_col)
-        ds = ctx.data_start_row
-        de = ctx.data_end_row
-        for r in range(ds, de + 1):
-            ws_orig.cell(r, rank_col_idx).value = (
-                f"=IF(${last_src_col}{r}*{MRR_TO_ARR}>10,"
-                f"RANK(${last_src_col}{r},${last_src_col}${ds}:${last_src_col}${de},0)"
-                f"+COUNTIF(${last_src_col}${ds}:${last_src_col}{r},${last_src_col}{r})-1,"
-                f'"N/A")'
-            )
 
         top10_end = DATA_START + min(TOP_N, len(top10)) - 1
         top10_total_row = top10_end + 1
@@ -496,7 +486,7 @@ class TopCustomersTab:
 
         _write_total_customers_row(
             ws, total_row, years, src_cols, layout,
-            ctx.data_start_row, ctx.data_end_row, total_cols,
+            ds, de, total_cols,
         )
         _apply_fmt(ws, total_row, fmts)
 

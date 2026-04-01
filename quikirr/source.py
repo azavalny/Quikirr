@@ -171,6 +171,7 @@ class SourceContext:
     snaps: dict[int, list[float]] = field(default_factory=dict)
     quarter_keys: list[tuple[int, int]] = field(default_factory=list)
     quarter_col_letters: dict[tuple[int, int], str] = field(default_factory=dict)
+    intermediate: Any = None
 
     @classmethod
     def from_worksheet(cls, ws) -> SourceContext:

@@ -7,6 +7,7 @@ OUTPUT_SHEET = "Annual Waterfall"
 ORIGINAL_SHEET = "Original Data"
 QUARTERLY_SHEET = "Quarterly Waterfall"
 TOP_CUSTOMERS_SHEET = "Top Customers"
+INTERMEDIATE_SHEET = "Intermediate Calcs"
 DEFAULT_SOURCE = Path(__file__).resolve().parent.parent / "Source.xlsx"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "Output.xlsx"
 
