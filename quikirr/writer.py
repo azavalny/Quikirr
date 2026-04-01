@@ -59,12 +59,13 @@ def write_summary_sheet(
     ncols = len(col_keys)
     last_col_letter = get_column_letter(1 + ncols)
 
-    ws.merge_cells(f"A1:{last_col_letter}1")
     c1 = ws["A1"]
     c1.value = title
     c1.fill = FILL_BLUE
     c1.font = FONT_WHITE_BOLD
     c1.alignment = Alignment(horizontal="center")
+    for j in range(2, 2 + ncols):
+        ws.cell(1, j).fill = FILL_BLUE
 
     for j, ck in enumerate(col_keys, start=2):
         cell = ws.cell(2, j, value=ck)

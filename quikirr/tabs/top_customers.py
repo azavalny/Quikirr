@@ -108,12 +108,13 @@ def _write_headers(ws, years: list[int], layout: dict, total_cols: int) -> None:
     first_lbl = dec_label(years[0])
     last_lbl = dec_label(years[-1])
 
-    ws.merge_cells(f"A1:{last_col_letter}1")
     title = ws["A1"]
     title.value = f"Top Customers as of {last_lbl}"
     title.fill = FILL_BLUE
     title.font = FONT_WHITE_BOLD
     title.alignment = Alignment(horizontal="center")
+    for c in range(2, total_cols + 1):
+        ws.cell(1, c).fill = FILL_BLUE
 
     for c in range(1, total_cols + 1):
         for r in (2, 3):
@@ -516,7 +517,7 @@ class TopCustomersTab:
 
         _add_conditional_formatting(ws, layout, n, DATA_START, top10_row2)
 
-        ws.column_dimensions["A"].width = 8
+        ws.column_dimensions["A"].width = 28
         ws.column_dimensions["B"].width = 18
         for j in range(3, total_cols + 1):
             ws.column_dimensions[get_column_letter(j)].width = 14
