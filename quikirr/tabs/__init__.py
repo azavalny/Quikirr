@@ -9,6 +9,6 @@ from .top_customers import TopCustomersTab
 TABS: list[SheetTab] = [
     AnnualWaterfallTab(),
     QuarterlyWaterfallTab(),
-    TopCustomersTab(),
     OriginalDataTab(),
+    TopCustomersTab(),
 ]

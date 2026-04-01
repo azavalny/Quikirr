@@ -206,18 +206,25 @@ def _write_customer_formulas(
     ws, row: int, rank: int, cust: _Customer,
     years: list[int], src_cols: dict[int, str],
     layout: dict, total_row: int,
+    cust_cl: str, rank_cl: str, ds: int, de: int,
 ) -> None:
     n = len(years)
     span = n - 1
     ws.cell(row, 1).value = rank
-    ws.cell(row, 2).value = cust.name
+    ws.cell(row, 2).value = (
+        f'=IFERROR(INDEX({SN}!${cust_cl}${ds}:${cust_cl}${de},'
+        f'MATCH($A{row},{SN}!${rank_cl}${ds}:${rank_cl}${de},0),1),"")'
+    )
 
     acl: list[str] = []
     for i, y in enumerate(years):
         col = layout["arr_start"] + i
         cl = get_column_letter(col)
         acl.append(cl)
-        ws.cell(row, col).value = f"={_src_cell(src_cols[y], cust.src_row)}*{MRR_TO_ARR}"
+        ws.cell(row, col).value = (
+            f'=IFERROR(INDEX({SN}!${src_cols[y]}${ds}:${src_cols[y]}${de},'
+            f'MATCH($A{row},{SN}!${rank_cl}${ds}:${rank_cl}${de},0),1)*{MRR_TO_ARR},0)'
+        )
 
     first, last = acl[0], acl[-1]
     ws.cell(row, layout["cagr"]).value = (
@@ -427,8 +434,29 @@ class TopCustomersTab:
 
         customers = _read_customers(ctx)
         ranked = sorted(customers, key=lambda c: c.last_arr, reverse=True)
+        ranked = [c for c in ranked if c.last_arr > 10]
         top10 = ranked[:TOP_N]
-        other_count = len(customers) - min(TOP_N, len(ranked))
+        num_top = len(top10)
+        last_src_col = src_cols[max(years)]
+        other_label = (
+            f'="Other ("&COUNTIFS({SN}!${last_src_col}${ctx.data_start_row}:'
+            f'${last_src_col}${ctx.data_end_row},">"&10/{MRR_TO_ARR})'
+            f'-{num_top}&" Customers)"'
+        )
+
+        ws_orig = wb[ORIGINAL_SHEET]
+        rank_col_idx = ctx.ws_in.max_column + 1
+        rank_cl = get_column_letter(rank_col_idx)
+        cust_cl = get_column_letter(ctx.cust_col)
+        ds = ctx.data_start_row
+        de = ctx.data_end_row
+        for r in range(ds, de + 1):
+            ws_orig.cell(r, rank_col_idx).value = (
+                f"=IF(${last_src_col}{r}*{MRR_TO_ARR}>10,"
+                f"RANK(${last_src_col}{r},${last_src_col}${ds}:${last_src_col}${de},0)"
+                f"+COUNTIF(${last_src_col}${ds}:${last_src_col}{r},${last_src_col}{r})-1,"
+                f'"N/A")'
+            )
 
         top10_end = DATA_START + min(TOP_N, len(top10)) - 1
         top10_total_row = top10_end + 1
@@ -447,6 +475,7 @@ class TopCustomersTab:
             row = DATA_START + rank_i - 1
             _write_customer_formulas(
                 ws, row, rank_i, cust, years, src_cols, layout, total_row,
+                cust_cl, rank_cl, ds, de,
             )
             _apply_fmt(ws, row, fmts)
             _set_row_style(ws, row, total_cols)
@@ -459,7 +488,7 @@ class TopCustomersTab:
         _apply_fmt(ws, top10_total_row, fmts)
 
         _write_other_row(
-            ws, other_row, f"Other ({other_count} Customers)",
+            ws, other_row, other_label,
             top10_total_row, total_row, years, layout, total_cols,
         )
         _apply_fmt(ws, other_row, fmts)

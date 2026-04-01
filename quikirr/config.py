@@ -8,6 +8,6 @@ ORIGINAL_SHEET = "Original Data"
 QUARTERLY_SHEET = "Quarterly Waterfall"
 TOP_CUSTOMERS_SHEET = "Top Customers"
 DEFAULT_SOURCE = Path(__file__).resolve().parent.parent / "Source.xlsx"
-DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "Annual_Waterfall_Output.xlsx"
+DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "Output.xlsx"
 
 MRR_TO_ARR = 12
