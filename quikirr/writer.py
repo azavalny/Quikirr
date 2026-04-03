@@ -79,12 +79,14 @@ def write_summary_sheet(
 
     for spec in row_specs:
         if spec.get("label") == "__CW_HEADER__":
-            ws.merge_cells(start_row=current_row, start_column=1, end_row=current_row, end_column=1 + ncols)
             h = ws.cell(current_row, 1, value="Customer Waterfall")
             h.fill = FILL_BLUE
             h.font = FONT_WHITE_BOLD
+            h.alignment = Alignment(horizontal="left")
             for j in range(2, 2 + ncols):
-                ws.cell(current_row, j).fill = FILL_BLUE
+                c = ws.cell(current_row, j)
+                c.fill = FILL_BLUE
+                c.font = FONT_WHITE_BOLD
             current_row += 1
             continue
 

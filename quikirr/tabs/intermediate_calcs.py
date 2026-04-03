@@ -21,6 +21,14 @@ class IntermediateLayout:
     annual_rows: dict[str, int]
     quarter_cols: dict
     quarterly_rows: dict[str, int]
+    score_new_col: int | None = None
+    rank_new_col: int | None = None
+    score_upsell_col: int | None = None
+    rank_upsell_col: int | None = None
+    score_downsell_col: int | None = None
+    rank_downsell_col: int | None = None
+    score_churn_col: int | None = None
+    rank_churn_col: int | None = None
 
 
 SN_ORIG = f"'{ORIGINAL_SHEET}'"
@@ -40,12 +48,35 @@ class IntermediateCalculationsTab:
         year_cols: dict[int, int] = {y: i + 2 for i, y in enumerate(years)}
         rank_col = 2 + n
 
+        score_new_col: int | None = None
+        rank_new_col: int | None = None
+        score_upsell_col: int | None = None
+        rank_upsell_col: int | None = None
+        score_downsell_col: int | None = None
+        rank_downsell_col: int | None = None
+        score_churn_col: int | None = None
+        rank_churn_col: int | None = None
+        ic_last_col = rank_col
+        prev_cl = ""
+        if n >= 2:
+            y_prev = years[-2]
+            prev_cl = get_column_letter(year_cols[y_prev])
+            score_new_col = rank_col + 1
+            rank_new_col = rank_col + 2
+            score_upsell_col = rank_col + 3
+            rank_upsell_col = rank_col + 4
+            score_downsell_col = rank_col + 5
+            rank_downsell_col = rank_col + 6
+            score_churn_col = rank_col + 7
+            rank_churn_col = rank_col + 8
+            ic_last_col = rank_churn_col
+
         # ---- Title ----
         ws["A1"].value = "Intermediate Calculations"
         ws["A1"].fill = FILL_BLUE
         ws["A1"].font = FONT_WHITE_BOLD
         ws["A1"].alignment = Alignment(horizontal="center")
-        for c in range(2, rank_col + 1):
+        for c in range(2, ic_last_col + 1):
             ws.cell(1, c).fill = FILL_BLUE
 
         # ---- Section A: Per-Customer Year-End ARR ----
@@ -62,10 +93,36 @@ class IntermediateCalculationsTab:
         rc.font = FONT_WHITE_BOLD
         rc.alignment = Alignment(horizontal="right")
 
+        if n >= 2:
+            cohort_hdrs = [
+                (score_new_col, "YoY New $"),
+                (rank_new_col, "Rnk New"),
+                (score_upsell_col, "YoY Upsell $"),
+                (rank_upsell_col, "Rnk Up"),
+                (score_downsell_col, "YoY Down $"),
+                (rank_downsell_col, "Rnk Dn"),
+                (score_churn_col, "YoY Churn $"),
+                (rank_churn_col, "Rnk Ch"),
+            ]
+            for col_i, label in cohort_hdrs:
+                cell = ws.cell(2, col_i, value=label)
+                cell.fill = FILL_BLUE
+                cell.font = FONT_WHITE_BOLD
+                cell.alignment = Alignment(horizontal="right")
+
         cust_start = 3
         cust_end = 2 + num_rows
         cust_cl = get_column_letter(ctx.cust_col)
         last_arr_cl = get_column_letter(year_cols[max(years)])
+
+        def _cohort_rank(sc_letter: str, r: int) -> str:
+            return (
+                f"=IF(${sc_letter}{r}<0,\"N/A\","
+                f"RANK(${sc_letter}{r},"
+                f"${sc_letter}${cust_start}:${sc_letter}${cust_end},0)"
+                f"+COUNTIF(${sc_letter}${cust_start}:${sc_letter}{r},"
+                f"${sc_letter}{r})-1)"
+            )
 
         for idx, src_r in enumerate(range(ds, de + 1)):
             r = cust_start + idx
@@ -85,6 +142,37 @@ class IntermediateCalculationsTab:
                 f"${last_arr_cl}{r},${last_arr_cl}{r})-1,"
                 f'"N/A")'
             )
+            if n >= 2:
+                scn = get_column_letter(score_new_col)
+                scu = get_column_letter(score_upsell_col)
+                scd = get_column_letter(score_downsell_col)
+                sch = get_column_letter(score_churn_col)
+                ws.cell(r, score_new_col).value = (
+                    f"=IF(AND(${prev_cl}{r}<=0,${last_arr_cl}{r}>0,"
+                    f"${last_arr_cl}{r}>10),${last_arr_cl}{r},-1)"
+                )
+                ws.cell(r, score_new_col).number_format = ACCOUNTING_FMT
+                ws.cell(r, rank_new_col).value = _cohort_rank(scn, r)
+                ws.cell(r, score_upsell_col).value = (
+                    f"=IF(AND(${prev_cl}{r}>0,${last_arr_cl}{r}>0,"
+                    f"${last_arr_cl}{r}>${prev_cl}{r}),"
+                    f"${last_arr_cl}{r}-${prev_cl}{r},-1)"
+                )
+                ws.cell(r, score_upsell_col).number_format = ACCOUNTING_FMT
+                ws.cell(r, rank_upsell_col).value = _cohort_rank(scu, r)
+                ws.cell(r, score_downsell_col).value = (
+                    f"=IF(AND(${prev_cl}{r}>10,${last_arr_cl}{r}>0,"
+                    f"${last_arr_cl}{r}<${prev_cl}{r}),"
+                    f"${prev_cl}{r}-${last_arr_cl}{r},-1)"
+                )
+                ws.cell(r, score_downsell_col).number_format = ACCOUNTING_FMT
+                ws.cell(r, rank_downsell_col).value = _cohort_rank(scd, r)
+                ws.cell(r, score_churn_col).value = (
+                    f"=IF(AND(${prev_cl}{r}>0,${last_arr_cl}{r}<=0,"
+                    f"${prev_cl}{r}>10),${prev_cl}{r},-1)"
+                )
+                ws.cell(r, score_churn_col).number_format = ACCOUNTING_FMT
+                ws.cell(r, rank_churn_col).value = _cohort_rank(sch, r)
 
         # ---- Section B: Annual Waterfall Aggregates ----
         sb = cust_end + 2
@@ -337,7 +425,7 @@ class IntermediateCalculationsTab:
 
         # Column widths
         ws.column_dimensions["A"].width = 36
-        max_col = max(rank_col, 1 + nq) if nq > 0 else rank_col
+        max_col = max(ic_last_col, 1 + nq) if nq > 0 else ic_last_col
         for j in range(2, max_col + 1):
             ws.column_dimensions[get_column_letter(j)].width = 14
 
@@ -350,4 +438,12 @@ class IntermediateCalculationsTab:
             annual_rows=ar,
             quarter_cols=qcols,
             quarterly_rows=qr,
+            score_new_col=score_new_col,
+            rank_new_col=rank_new_col,
+            score_upsell_col=score_upsell_col,
+            rank_upsell_col=rank_upsell_col,
+            score_downsell_col=score_downsell_col,
+            rank_downsell_col=rank_downsell_col,
+            score_churn_col=score_churn_col,
+            rank_churn_col=rank_churn_col,
         )

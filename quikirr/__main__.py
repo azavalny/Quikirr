@@ -5,10 +5,34 @@ from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 
-from .config import DEFAULT_OUTPUT, DEFAULT_SOURCE, SOURCE_SHEET
+from .config import (
+    DEFAULT_OUTPUT,
+    DEFAULT_SOURCE,
+    INTERMEDIATE_SHEET,
+    OUTPUT_SHEET,
+    ORIGINAL_SHEET,
+    QUARTERLY_SHEET,
+    SOURCE_SHEET,
+    TOP_CUSTOMERS_SHEET,
+)
 from .source import SourceContext
 from .tabs import TABS
 from .verify import assert_bridge
+
+_WORKBOOK_TAB_ORDER = (
+    OUTPUT_SHEET,
+    QUARTERLY_SHEET,
+    TOP_CUSTOMERS_SHEET,
+    INTERMEDIATE_SHEET,
+    ORIGINAL_SHEET,
+)
+
+
+def _reorder_workbook_sheets(wb, titles: tuple[str, ...]) -> None:
+    by_title = {ws.title: ws for ws in wb.worksheets}
+    ordered = [by_title[t] for t in titles]
+    extra = [ws for ws in wb.worksheets if ws.title not in titles]
+    wb._sheets = ordered + extra
 
 
 def run(source: Path, output: Path, verify: bool = True) -> None:
@@ -25,6 +49,8 @@ def run(source: Path, output: Path, verify: bool = True) -> None:
     wb_out = Workbook()
     for tab in TABS:
         tab.build(wb_out, ctx)
+
+    _reorder_workbook_sheets(wb_out, _WORKBOOK_TAB_ORDER)
 
     wb_out.save(output)
     wb_in.close()
