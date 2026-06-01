@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import io
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
@@ -35,13 +36,10 @@ def _reorder_workbook_sheets(wb, titles: tuple[str, ...]) -> None:
     wb._sheets = ordered + extra
 
 
-def run(source: Path, output: Path, verify: bool = True) -> None:
-    wb_in = load_workbook(source, data_only=True)
+def _build_output_workbook(wb_in, verify: bool = True) -> Workbook:
     if SOURCE_SHEET not in wb_in.sheetnames:
         raise KeyError(f"Missing sheet {SOURCE_SHEET!r}")
-    ws_in = wb_in[SOURCE_SHEET]
-
-    ctx = SourceContext.from_worksheet(ws_in)
+    ctx = SourceContext.from_worksheet(wb_in[SOURCE_SHEET])
 
     if verify:
         assert_bridge(ctx.years, ctx.snaps)
@@ -51,9 +49,23 @@ def run(source: Path, output: Path, verify: bool = True) -> None:
         tab.build(wb_out, ctx)
 
     _reorder_workbook_sheets(wb_out, _WORKBOOK_TAB_ORDER)
+    return wb_out
 
+
+def run(source: Path, output: Path, verify: bool = True) -> None:
+    wb_in = load_workbook(source, data_only=True)
+    wb_out = _build_output_workbook(wb_in, verify)
     wb_out.save(output)
     wb_in.close()
+
+
+def run_to_bytes(source_bytes: bytes, verify: bool = False) -> bytes:
+    wb_in = load_workbook(io.BytesIO(source_bytes), data_only=True)
+    wb_out = _build_output_workbook(wb_in, verify)
+    buf = io.BytesIO()
+    wb_out.save(buf)
+    wb_in.close()
+    return buf.getvalue()
 
 
 def main() -> None:
