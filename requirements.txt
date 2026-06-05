@@ -1,6 +1,6 @@
 openpyxl>=3.1.2,<4
 python-dotenv
 fastapi
-uvicorn[standard]
+uvicorn
 python-multipart
 sendgrid
