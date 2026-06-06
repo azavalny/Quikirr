@@ -256,6 +256,61 @@ def write_customer_formulas(
     ws.cell(row, layout["since"]).alignment = Alignment(horizontal="right")
 
 
+def section_row_layout(data_start: int) -> dict[str, int]:
+    data_end = data_start + TOP_N - 1
+    top10_total_row = data_end + 1
+    other_row = top10_total_row + 2
+    total_row = other_row + 1
+    top5_row = total_row + 2
+    top10_row2 = top5_row + 1
+    return dict(
+        data_end=data_end,
+        top5_end=data_start + 5 - 1,
+        top10_total_row=top10_total_row,
+        other_row=other_row,
+        total_row=total_row,
+        top5_row=top5_row,
+        top10_row2=top10_row2,
+    )
+
+
+def write_top_n_customer_rows(
+    ws,
+    data_start: int,
+    customers: list,
+    years: list[int],
+    src_cols: dict[int, str],
+    layout: dict,
+    total_row: int,
+    cust_cl: str,
+    rank_cl: str,
+    ds: int,
+    de: int,
+    fmts: list[tuple[int, str]],
+    total_cols: int,
+) -> None:
+    for rank_i in range(1, TOP_N + 1):
+        row = data_start + rank_i - 1
+        since = customers[rank_i - 1].since if rank_i - 1 < len(customers) else ""
+        write_customer_formulas(
+            ws,
+            row,
+            rank_i,
+            since,
+            years,
+            src_cols,
+            layout,
+            total_row,
+            cust_cl,
+            rank_cl,
+            ds,
+            de,
+            block_data_start=data_start,
+        )
+        apply_fmt(ws, row, fmts)
+        set_row_style(ws, row, total_cols)
+
+
 def write_sum_row(
     ws,
     row: int,

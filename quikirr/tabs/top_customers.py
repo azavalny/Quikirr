@@ -24,10 +24,10 @@ from .top_sheet_common import (
     apply_fmt,
     col_formats,
     col_layout,
+    section_row_layout,
     set_column_widths,
-    set_row_style,
-    write_customer_formulas,
     write_headers,
+    write_top_n_customer_rows,
     write_other_row,
     write_sum_row,
     write_total_customers_row,
@@ -104,12 +104,13 @@ class TopCustomersTab:
             f'-{num_top}&" Customers)"'
         )
 
-        top10_end = DATA_START + min(TOP_N, len(top10)) - 1
-        top10_total_row = top10_end + 1
-        other_row = top10_total_row + 2
-        total_row = other_row + 1
-        top5_row = total_row + 2
-        top10_row2 = top5_row + 1
+        rows = section_row_layout(DATA_START)
+        top10_end = rows["data_end"]
+        top10_total_row = rows["top10_total_row"]
+        other_row = rows["other_row"]
+        total_row = rows["total_row"]
+        top5_row = rows["top5_row"]
+        top10_row2 = rows["top10_row2"]
 
         ws = wb.create_sheet()
         ws.title = self.title[:31]
@@ -124,25 +125,21 @@ class TopCustomersTab:
         )
         fmts = col_formats(layout, n)
 
-        for rank_i, cust in enumerate(top10, start=1):
-            row = DATA_START + rank_i - 1
-            write_customer_formulas(
-                ws,
-                row,
-                rank_i,
-                cust.since,
-                years,
-                src_cols,
-                layout,
-                total_row,
-                cust_cl,
-                rank_cl,
-                ds,
-                de,
-                block_data_start=DATA_START,
-            )
-            apply_fmt(ws, row, fmts)
-            set_row_style(ws, row, total_cols)
+        write_top_n_customer_rows(
+            ws,
+            DATA_START,
+            top10,
+            years,
+            src_cols,
+            layout,
+            total_row,
+            cust_cl,
+            rank_cl,
+            ds,
+            de,
+            fmts,
+            total_cols,
+        )
 
         write_sum_row(
             ws,
@@ -183,7 +180,7 @@ class TopCustomersTab:
         )
         apply_fmt(ws, total_row, fmts)
 
-        top5_end = DATA_START + min(5, len(top10)) - 1
+        top5_end = rows["top5_end"]
         write_sum_row(
             ws,
             top5_row,

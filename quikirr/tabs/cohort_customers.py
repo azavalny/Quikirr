@@ -15,11 +15,11 @@ from .top_sheet_common import (
     apply_fmt,
     col_formats,
     col_layout,
-    set_row_style,
-    write_customer_formulas,
+    section_row_layout,
     write_header_block,
     write_other_row,
     write_sum_row,
+    write_top_n_customer_rows,
     write_total_cohort_row,
 )
 
@@ -126,12 +126,13 @@ def _append_one_cohort(
         f'${score_cl}${de},">=0")-{num_top}&" Customers)"'
     )
 
-    top10_end = data_start + min(TOP_N, len(top10)) - 1
-    top10_total_row = top10_end + 1
-    other_row = top10_total_row + 2
-    total_row = other_row + 1
-    top5_row = total_row + 2
-    top10_row2 = top5_row + 1
+    rows = section_row_layout(data_start)
+    top10_end = rows["data_end"]
+    top10_total_row = rows["top10_total_row"]
+    other_row = rows["other_row"]
+    total_row = rows["total_row"]
+    top5_row = rows["top5_row"]
+    top10_row2 = rows["top10_row2"]
 
     write_header_block(
         ws,
@@ -144,25 +145,21 @@ def _append_one_cohort(
     )
     fmts = col_formats(layout, n)
 
-    for rank_i, cust in enumerate(top10, start=1):
-        row = data_start + rank_i - 1
-        write_customer_formulas(
-            ws,
-            row,
-            rank_i,
-            cust.since,
-            years,
-            src_cols,
-            layout,
-            total_row,
-            cust_cl,
-            rank_cl,
-            ds,
-            de,
-            block_data_start=data_start,
-        )
-        apply_fmt(ws, row, fmts)
-        set_row_style(ws, row, total_cols)
+    write_top_n_customer_rows(
+        ws,
+        data_start,
+        top10,
+        years,
+        src_cols,
+        layout,
+        total_row,
+        cust_cl,
+        rank_cl,
+        ds,
+        de,
+        fmts,
+        total_cols,
+    )
 
     write_sum_row(
         ws,
@@ -205,7 +202,7 @@ def _append_one_cohort(
     )
     apply_fmt(ws, total_row, fmts)
 
-    top5_end = data_start + min(5, len(top10)) - 1
+    top5_end = rows["top5_end"]
     write_sum_row(
         ws,
         top5_row,
