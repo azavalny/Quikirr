@@ -16,7 +16,7 @@ from .config import (
     SOURCE_SHEET,
     TOP_CUSTOMERS_SHEET,
 )
-from .source import SourceContext
+from .source import SourceContext, find_table_bounds
 from .tabs import TABS
 from .verify import assert_bridge
 
@@ -36,10 +36,24 @@ def _reorder_workbook_sheets(wb, titles: tuple[str, ...]) -> None:
     wb._sheets = ordered + extra
 
 
+def _resolve_source_worksheet(wb_in):
+    if SOURCE_SHEET in wb_in.sheetnames:
+        return wb_in[SOURCE_SHEET]
+    by_norm = {name.strip().casefold(): name for name in wb_in.sheetnames}
+    match = by_norm.get(SOURCE_SHEET.casefold())
+    if match is not None:
+        return wb_in[match]
+    for name in wb_in.sheetnames:
+        try:
+            find_table_bounds(wb_in[name])
+        except ValueError:
+            continue
+        return wb_in[name]
+    raise KeyError(f"Missing sheet {SOURCE_SHEET!r}")
+
+
 def _build_output_workbook(wb_in, verify: bool = True) -> Workbook:
-    if SOURCE_SHEET not in wb_in.sheetnames:
-        raise KeyError(f"Missing sheet {SOURCE_SHEET!r}")
-    ctx = SourceContext.from_worksheet(wb_in[SOURCE_SHEET])
+    ctx = SourceContext.from_worksheet(_resolve_source_worksheet(wb_in))
 
     if verify:
         assert_bridge(ctx.years, ctx.snaps)
